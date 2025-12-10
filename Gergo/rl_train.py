@@ -35,11 +35,14 @@ requirements = [
     "clearml==1.16.0"
 ]
 
-# 2. ClearML Init
+# Initialize task
 task: TaskInstance = Task.init(
     project_name='Mentor Group - Karna/Group 1',
     task_name='Experiment_SAC_1M_MultiReward'
 )
+
+# Force set the requirements
+task.set_packages(requirements)
 
 task.set_base_docker('deanis/2023y2b-rl:latest')
 task.execute_remotely(queue_name="default")
