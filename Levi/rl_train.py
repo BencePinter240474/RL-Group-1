@@ -8,6 +8,8 @@ import wandb
 from wandb.integration.sb3 import WandbCallback
 from clearml import Task
 
+os.environ["WANDB_API_KEY"] = "a9d5663872aaae616cbdd9ef0c57193447b5e12d"
+
 # 1. Setup Arguments First
 parser = argparse.ArgumentParser()
 parser.add_argument("--learning_rate", type=float, default=0.0003)
