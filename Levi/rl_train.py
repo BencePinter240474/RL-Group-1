@@ -1,11 +1,15 @@
+from clearml.task import TaskInstance
 from stable_baselines3 import PPO
 import os
 import argparse
 from ot2_env_wrapper import OT2Env
 from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
 import wandb
+import tensorboard
 from wandb.integration.sb3 import WandbCallback
 from clearml import Task
+
+os.environ["WANDB_API_KEY"] = "a9d5663872aaae616cbdd9ef0c57193447b5e12d"
 
 # 1. Setup Arguments First
 parser = argparse.ArgumentParser()
@@ -20,7 +24,7 @@ parser.add_argument("--total_timesteps", type=int, default=1000000, help="Timest
 args = parser.parse_args()
 
 # 2. ClearML Init
-task = Task.init(
+task: TaskInstance = Task.init(
     project_name='Mentor Group - Karna/Group 1',
     task_name='Experiment_PPO_1M'
 )
@@ -30,7 +34,7 @@ task.execute_remotely(queue_name="default")
 
 # 3. WandB Init
 # Added config=vars(args) so your hyperparameters are logged to WandB too!
-run = wandb.init(project="RL controller",entity="240474-breda-university-of-applied-sciences", sync_tensorboard=True, config=vars(args))
+run = wandb.init(project="RL controller",entity="240474-breda-university-of-applied-sciences", sync_tensorboard=False, config=vars(args))
 
 # 4. SAFETY FIX: Create the directory before using it
 os.makedirs(f"models/{run.id}", exist_ok=True)
