@@ -5,6 +5,7 @@ import argparse
 from ot2_env_wrapper import OT2Env
 from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
 import wandb
+import tensorboard
 from wandb.integration.sb3 import WandbCallback
 from clearml import Task
 
@@ -33,7 +34,7 @@ task.execute_remotely(queue_name="default")
 
 # 3. WandB Init
 # Added config=vars(args) so your hyperparameters are logged to WandB too!
-run = wandb.init(project="RL controller",entity="240474-breda-university-of-applied-sciences", sync_tensorboard=True, config=vars(args))
+run = wandb.init(project="RL controller",entity="240474-breda-university-of-applied-sciences", sync_tensorboard=False, config=vars(args))
 
 # 4. SAFETY FIX: Create the directory before using it
 os.makedirs(f"models/{run.id}", exist_ok=True)
