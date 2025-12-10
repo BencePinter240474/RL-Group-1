@@ -3,7 +3,8 @@ from stable_baselines3 import PPO
 import os
 import argparse
 from ot2_env_wrapper import OT2Env
-from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
+from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize, SubprocVecEnv
+from stable_baselines3.common.env_util import make_vec_env
 import wandb
 from wandb.integration.sb3 import WandbCallback
 from clearml import Task
@@ -14,12 +15,13 @@ os.environ["WANDB_API_KEY"] = "a9d5663872aaae616cbdd9ef0c57193447b5e12d"
 # 1. Setup Arguments First
 parser = argparse.ArgumentParser()
 parser.add_argument("--learning_rate", type=float, default=0.0003)
-parser.add_argument("--gamma", type=float, default=0.99, help="Discount factor")
+parser.add_argument("--gamma", type=float, default=0.995, help="Discount factor")
 parser.add_argument("--clip_range", type=float, default=0.2, help="PPO Clipping parameter")
 parser.add_argument("--batch_size", type=int, default=64)
 parser.add_argument("--n_steps", type=int, default=2048)
 parser.add_argument("--n_epochs", type=int, default=10)
 parser.add_argument("--total_timesteps", type=int, default=1000000, help="Timesteps")
+parser.add_argument("--n_envs", type=int, default=1, help="Parallel Environments")
 
 args = parser.parse_args()
 
@@ -39,9 +41,21 @@ run = wandb.init(project="RL controller",entity="240474-breda-university-of-appl
 # 4. SAFETY FIX: Create the directory before using it
 os.makedirs(f"models/{run.id}", exist_ok=True)
 
-# 5. Environment
-env = DummyVecEnv([lambda: OT2Env(render=False)])
-env = VecNormalize(env, norm_obs=True, norm_reward=True)
+n_envs = 16
+
+
+# 5. Environment Setup (The Big Fix)
+print(f"Creating {args.n_envs} parallel environments...")
+env = make_vec_env(
+    OT2Env,
+    n_envs=args.n_envs,
+    env_kwargs={"render": False},
+    vec_env_cls=SubprocVecEnv, # Forces multiprocessing
+    seed=42
+)
+
+# B. Add Normalization (Critical Step!)
+env = VecNormalize(env, norm_obs=True, norm_reward=True, clip_obs=10.)
 
 # 6. Model
 model = PPO('MlpPolicy', env, verbose=1,
