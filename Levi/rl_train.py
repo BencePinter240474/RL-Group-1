@@ -1,3 +1,4 @@
+from clearml.task import TaskInstance
 from stable_baselines3 import PPO
 import os
 import argparse
@@ -20,13 +21,13 @@ parser.add_argument("--total_timesteps", type=int, default=1000000, help="Timest
 args = parser.parse_args()
 
 # 2. ClearML Init
-task = Task.init(
-    project_name='Mentor Group - Karna/Group 1',
-    task_name='Experiment_PPO_1M'
-)
-
-task.set_base_docker('deanis/2023y2b-rl:latest')
-task.execute_remotely(queue_name="default")
+#task: TaskInstance = Task.init(
+#    project_name='Mentor Group - Karna/Group 1',
+#    task_name='Experiment_PPO_1M'
+#)
+#
+#task.set_base_docker('deanis/2023y2b-rl:latest')
+#task.execute_remotely(queue_name="default")
 
 # 3. WandB Init
 # Added config=vars(args) so your hyperparameters are logged to WandB too!
@@ -69,7 +70,7 @@ model.save(model_path)
 env.save(stats_path)
 
 # This attaches the files to the 'Mentor Group - Karna/Group 1' experiment
-task.upload_artifact(name="final_model", artifact_object=model_path)
-task.upload_artifact(name="vec_normalize", artifact_object=stats_path)
+#task.upload_artifact(name="final_model", artifact_object=model_path)
+#task.upload_artifact(name="vec_normalize", artifact_object=stats_path)
 
 print("Training Complete! Artifacts uploaded.")
