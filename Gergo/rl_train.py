@@ -1,14 +1,8 @@
-from clearml.task import TaskInstance
-from stable_baselines3 import SAC
+from clearml import Task
 import os
 import argparse
-from ot2_env_wrapper import OT2Env
-from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
-import wandb
-from wandb.integration.sb3 import WandbCallback
-from clearml import Task
 
-os.environ["WANDB_API_KEY"] = "7f4b78cf1ab92b917e73ce5302a18facae7ab552"
+os.environ["WANDB_API_KEY"] = "a9d5663872aaae616cbdd9ef0c57193447b5e12d"
 
 # 1. Setup Arguments First
 parser = argparse.ArgumentParser()
@@ -25,27 +19,35 @@ parser.add_argument("--total_timesteps", type=int, default=1000000, help="Timest
 
 args = parser.parse_args()
 
-requirements = [
-    "gymnasium==1.0.0",  # Downgraded for compatibility
-    "numpy==1.26.4",     # Use latest stable 1.x version
-    "pybullet==3.2.5",
-    "stable-baselines3==2.3.2",  # Latest stable version
-    "tensorboard==2.15.0",
-    "wandb==0.16.0",
-    "clearml==1.16.0"
-]
-
-# Initialize task
-task: TaskInstance = Task.init(
+# 2. ClearML Init with COMPATIBLE package versions
+task = Task.init(
     project_name='Mentor Group - Karna/Group 1',
-    task_name='Experiment_SAC_1M_MultiReward'
+    task_name='Experiment_SAC_1M_MultiReward',
+    auto_detect_requirements=False  # Disable auto-detection
 )
 
-# Force set the requirements
-task.set_packages(requirements)
+# FIXED: Use compatible versions
+requirements = [
+    "gymnasium==0.29.1",  # Compatible with stable-baselines3 2.1.0
+    "numpy==1.24.3",      # Compatible numpy version
+    "stable-baselines3==2.1.0",  # Stable version that works with gymnasium 0.29
+    "pybullet==3.2.5",
+    "tensorboard==2.15.0",
+    "wandb==0.16.0",
+    "torch==2.1.0",
+    "clearml"
+]
 
+task.set_packages(requirements)
 task.set_base_docker('deanis/2023y2b-rl:latest')
 task.execute_remotely(queue_name="default")
+
+# NOW import the packages after ClearML setup
+from stable_baselines3 import SAC
+from ot2_env_wrapper import OT2Env
+from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
+import wandb
+from wandb.integration.sb3 import WandbCallback
 
 # 3. WandB Init
 run = wandb.init(
