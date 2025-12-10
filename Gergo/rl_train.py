@@ -22,8 +22,7 @@ args = parser.parse_args()
 # 2. ClearML Init with COMPATIBLE package versions
 task = Task.init(
     project_name='Mentor Group - Karna/Group 1',
-    task_name='Experiment_SAC_1M_MultiReward',
-    auto_detect_requirements=False  # Disable auto-detection
+    task_name='Experiment_SAC_1M_MultiReward',  # Disable auto-detection
 )
 
 # FIXED: Use compatible versions
