@@ -1,3 +1,4 @@
+from clearml.task import TaskInstance
 from stable_baselines3 import PPO
 import os
 import argparse
@@ -20,7 +21,7 @@ parser.add_argument("--total_timesteps", type=int, default=1000000, help="Timest
 args = parser.parse_args()
 
 # 2. ClearML Init
-task = Task.init(
+task: TaskInstance = Task.init(
     project_name='Mentor Group - Karna/Group 1',
     task_name='Experiment_PPO_1M'
 )
