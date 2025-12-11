@@ -72,27 +72,39 @@ class OT2Env(gym.Env):
         # Calculate current distance
         current_distance = np.linalg.norm(pipette_pos - self.goal_position)
         
-        # MULTI-COMPONENT REWARD FUNCTION
-        # 1. Progress reward (most important) - positive when getting closer
-        progress_reward = (self.prev_distance - current_distance) * 10.0  # Scale up for importance
+        # PRECISION-FOCUSED REWARD FUNCTION
+        # 1. Progress reward (still important)
+        progress_reward = (self.prev_distance - current_distance) * 10.0
         
-        # 2. Distance penalty (scaled down) - small continuous penalty
-        distance_penalty = -current_distance * 0.1  # Scaled down to not dominate
+        # 2. Exponential distance penalty (adjusted for 0.5mm target)
+        if current_distance < 0.01:  # Within 10mm
+            distance_penalty = -np.exp(current_distance * 200) + 1  # Reduced from 500 to 200
+        else:
+            distance_penalty = -current_distance * 0.1
         
-        # 3. Success bonus - significant reward when reaching goal
+        # 3. Success bonus (for 0.5mm precision)
         success_bonus = 0.0
-        if current_distance < 0.001:
-            success_bonus = 50.0  # Large bonus for success
+        if current_distance < 0.0005:  # 0.5mm threshold
+            success_bonus = 100.0
+        
+        # 4. Precision bonus tiers (adjusted for 0.5mm goal)
+        precision_bonus = 0.0
+        if current_distance < 0.002:  # Under 2mm
+            precision_bonus = 5.0
+        if current_distance < 0.001:  # Under 1mm  
+            precision_bonus = 15.0
+        if current_distance < 0.0005:  # Under 0.5mm
+            precision_bonus = 25.0
         
         # Combine all reward components
-        reward = float(progress_reward + distance_penalty + success_bonus)
+        reward = float(progress_reward + distance_penalty + success_bonus + precision_bonus)
         
         # Update previous distance for next step
         self.prev_distance = current_distance
 
-        # Check Termination (Success)
+        # Check Termination (Success) - 0.5mm threshold
         terminated = False
-        if current_distance < 0.001:
+        if current_distance < 0.0005:  # 0.5mm
             terminated = True
             info = {'success': True}
         else:
