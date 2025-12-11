@@ -7,9 +7,9 @@ os.environ["WANDB_API_KEY"] = "a9d5663872aaae616cbdd9ef0c57193447b5e12d"
 # 1. Setup Arguments First
 parser = argparse.ArgumentParser()
 parser.add_argument("--learning_rate", type=float, default=0.0003)
-parser.add_argument("--buffer_size", type=int, default=2000000)
+parser.add_argument("--buffer_size", type=int, default=1500000)
 parser.add_argument("--learning_starts", type=int, default=10000)
-parser.add_argument("--batch_size", type=int, default=512)
+parser.add_argument("--batch_size", type=int, default=1024)
 parser.add_argument("--tau", type=float, default=0.005)
 parser.add_argument("--gamma", type=float, default=0.99)
 parser.add_argument("--train_freq", type=int, default=1)
