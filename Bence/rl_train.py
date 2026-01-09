@@ -15,17 +15,17 @@ parser.add_argument("--gamma", type=float, default=0.99)
 parser.add_argument("--train_freq", type=int, default=1)
 parser.add_argument("--gradient_steps", type=int, default=1)
 parser.add_argument("--ent_coef", type=str, default="auto")
-parser.add_argument("--total_timesteps", type=int, default=3000000, help="Timesteps")
+parser.add_argument("--total_timesteps", type=int, default=5000000, help="Timesteps")
+parser.add_argument("--fixed_z", type=float, default=0.125, help="Fixed Z height")
 
 args = parser.parse_args()
 
-# 2. ClearML Init with COMPATIBLE package versions
+# 2. ClearML Init
 task = Task.init(
     project_name='Mentor Group - Karna/Group 1',
-    task_name='SAC_1M_w_new_wrapper',
+    task_name='SAC_2D_FixedZ_3M',
 )
 
-# FIXED: Use compatible versions
 requirements = [
     "gymnasium==0.29.1",
     "numpy==1.24.3",
@@ -43,7 +43,7 @@ task.execute_remotely(queue_name="default")
 
 # NOW import the packages after ClearML setup
 from stable_baselines3 import SAC
-from ot2_env_wrapper import OT2Env
+from ot2_env_wrapper import OT2Env2D
 from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
 import wandb
 from wandb.integration.sb3 import WandbCallback
@@ -54,18 +54,17 @@ run = wandb.init(
     entity="240474-breda-university-of-applied-sciences", 
     sync_tensorboard=False, 
     config=vars(args),
-    name="SAC_MultiReward"
+    name=f"SAC_2D_Z{args.fixed_z}"
 )
 
 # 4. Create directory for models
 os.makedirs(f"models/{run.id}", exist_ok=True)
 
-# 5. Environment
-# Wrapper handles observation normalization, VecNormalize handles reward normalization
-env = DummyVecEnv([lambda: OT2Env(render_mode=None, normalize=True)])
+# 5. Environment - 2D version with fixed Z
+env = DummyVecEnv([lambda: OT2Env2D(render_mode=None, normalize=True, fixed_z=args.fixed_z)])
 env = VecNormalize(env, norm_obs=False, norm_reward=True)
 
-# 6. Model - Using SAC for better continuous control
+# 6. Model - SAC with smaller network (2D is simpler)
 model = SAC(
     'MlpPolicy', 
     env, 
@@ -80,7 +79,7 @@ model = SAC(
     gradient_steps=args.gradient_steps,
     ent_coef=args.ent_coef,
     policy_kwargs=dict(
-        net_arch=[256, 256]
+        net_arch=[256, 256]  # Can try smaller like [128, 128] for 2D
     ),
     tensorboard_log=f"runs/{run.id}"
 )
@@ -100,15 +99,15 @@ model.learn(
 )
 
 # 8. Saving & Uploading
-model_path = f"models/{run.id}/final_model.zip"
-stats_path = f"models/{run.id}/vec_normalize.pkl"
+model_path = f"models/{run.id}/final_model_2d.zip"
+stats_path = f"models/{run.id}/vec_normalize_2d.pkl"
 
 model.save(model_path)
 env.save(stats_path)
 
 # Upload to ClearML
-task.upload_artifact(name="final_model", artifact_object=model_path)
-task.upload_artifact(name="vec_normalize", artifact_object=stats_path)
+task.upload_artifact(name="final_model_2d", artifact_object=model_path)
+task.upload_artifact(name="vec_normalize_2d", artifact_object=stats_path)
 
 print("Training Complete! Artifacts uploaded.")
 wandb.finish()
