@@ -1,0 +1,40 @@
+{
+  "os":  "Windows-10-10.0.26200-SP0",
+  "python":  "CPython 3.11.14",
+  "startedAt":  "2025-12-10T10:41:59.943653Z",
+  "program":  "C:\\Users\\honya\\Documents\\GitHub\\2025-26b-fai2-adsai-GergoHonyak242720\\datalab_tasks\\Robotics\\rl_1.py",
+  "codePath":  "datalab_tasks\\Robotics\\rl_1.py",
+  "codePathLocal":  "rl_1.py",
+  "git":  {
+    "remote":  "https://github.com/BredaUniversityADSAI/2025-26b-fai2-adsai-GergoHonyak242720.git",
+    "commit":  "b562dae1a12c9e6641983659c6b8e67a2c48dd7b"
+  },
+  "email":  "242720@buas.nl",
+  "root":  "C:\\Users\\honya\\Documents\\GitHub\\2025-26b-fai2-adsai-GergoHonyak242720\\datalab_tasks\\Robotics",
+  "host":  "gergo",
+  "executable":  "C:\\Users\\honya\\.conda\\envs\\plant_segmentation\\python.exe",
+  "cpu_count":  14,
+  "cpu_count_logical":  20,
+  "gpu":  "NVIDIA GeForce RTX 4060 Laptop GPU",
+  "gpu_count":  1,
+  "disk":  {
+    "/":  {
+      "total":  "994436255744",
+      "used":  "586483474432"
+    }
+  },
+  "memory":  {
+    "total":  "33960333312"
+  },
+  "gpu_nvidia":  [
+    {
+      "name":  "NVIDIA GeForce RTX 4060 Laptop GPU",
+      "memoryTotal":  "8585740288",
+      "cudaCores":  3072,
+      "architecture":  "Ada",
+      "uuid":  "GPU-853ad9a9-9a20-eff2-e7de-78af02b4b326"
+    }
+  ],
+  "cudaVersion":  "12.7",
+  "writerId":  "d1g8xlbf0qbmem68lnkdbcujzae29zjz"
+}
