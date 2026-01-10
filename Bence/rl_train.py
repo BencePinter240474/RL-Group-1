@@ -23,7 +23,7 @@ args = parser.parse_args()
 # 2. ClearML Init
 task = Task.init(
     project_name='Mentor Group - Karna/Group 1',
-    task_name='SAC_2D_FixedZ_NewReward',
+    task_name='SAC_2D_NewReward',
 )
 
 requirements = [
