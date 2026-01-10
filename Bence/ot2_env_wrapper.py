@@ -28,7 +28,7 @@ class OT2Env2D(gym.Env):
     # Workspace bounds from URDF joint limits + pipette offset
     PIPETTE_X_MIN, PIPETTE_X_MAX = -0.187, 0.253
     PIPETTE_Y_MIN, PIPETTE_Y_MAX = -0.1705, 0.2195
-    PIPETTE_Z_MIN, PIPETTE_Z_MAX = 0.1250, 0.2895
+    PIPETTE_Z_MIN, PIPETTE_Z_MAX = 0.1695, 0.2895
     
     # Velocity bounds
     MAX_VELOCITY = 1.0
@@ -124,14 +124,17 @@ class OT2Env2D(gym.Env):
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
         
-        # Generate random goal position (X, Y only)
+        # Goal position (only X, Y - Z is fixed)
         if options and "goal" in options:
             goal = np.array(options["goal"], dtype=np.float32)
             self.goal_position = goal[:2]  # Only take X, Y
         else:
+            # Expanded goal range (within workspace limits)
+            # Covers real plant coordinates: X=[0.19, 0.21], Y=[0.09, 0.21]
+            # Workspace max: X=0.253, Y=0.2195
             self.goal_position = self.np_random.uniform(
-                low=[-0.15, -0.15],
-                high=[0.15, 0.15],
+                low=[0.10, 0.05],
+                high=[0.25, 0.21],
             ).astype(np.float32)
         
         # Reset simulation
@@ -221,31 +224,23 @@ class OT2Env2D(gym.Env):
         current_distance = np.linalg.norm(pipette_pos[:2] - self.goal_position)
         
         # ==================== REWARD FUNCTION ====================
-        # 1. Progress reward
-        progress_reward = (self.prev_distance - current_distance) * 10.0
+        # Simple, continuous reward - no discontinuities
         
-        # 2. Exponential distance penalty (adjusted for 0.5mm target)
-        if current_distance < 0.01:  # Within 10mm
-            distance_penalty = -np.exp(current_distance * 200) + 1
-        else:
-            distance_penalty = -current_distance * 0.1
+        # 1. Dense reward: negative distance (closer = better)
+        distance_reward = -current_distance * 10.0
         
-        # 3. Success bonus (for 0.5mm precision)
+        # 2. Progress reward: reward for getting closer
+        progress_reward = (self.prev_distance - current_distance) * 100.0
+        
+        # 3. Success bonus
         success_bonus = 0.0
-        if current_distance < 0.0005:  # 0.5mm threshold
+        if current_distance < 0.001:  # 1mm
+            success_bonus = 50.0
+        if current_distance < 0.0005:  # 0.5mm
             success_bonus = 100.0
         
-        # 4. Precision bonus tiers
-        precision_bonus = 0.0
-        if current_distance < 0.002:  # Under 2mm
-            precision_bonus = 5.0
-        if current_distance < 0.001:  # Under 1mm
-            precision_bonus = 15.0
-        if current_distance < 0.0005:  # Under 0.5mm
-            precision_bonus = 25.0
-        
-        # Combine all reward components
-        reward = float(progress_reward + distance_penalty + success_bonus + precision_bonus)
+        # Combine rewards
+        reward = float(distance_reward + progress_reward + success_bonus)
         # =========================================================
         
         # Update previous distance
@@ -264,10 +259,9 @@ class OT2Env2D(gym.Env):
             "goal_position": self.goal_position.copy(),
             "fixed_z": self.fixed_z,
             "reward_components": {
+                "distance": distance_reward,
                 "progress": progress_reward,
-                "distance_penalty": distance_penalty,
                 "success_bonus": success_bonus,
-                "precision_bonus": precision_bonus,
             }
         }
         
@@ -281,3 +275,57 @@ class OT2Env2D(gym.Env):
     def close(self):
         if hasattr(self.sim, 'close'):
             self.sim.close()
+
+
+# Test the environment
+if __name__ == "__main__":
+    from gymnasium.utils.env_checker import check_env
+    
+    print("="*60)
+    print("Testing OT2Env2D (Fixed Z)")
+    print("="*60)
+    
+    env = OT2Env2D(render_mode=None, normalize=True, fixed_z=0.125)
+    
+    print(f"Action space: {env.action_space}")
+    print(f"Observation space: {env.observation_space}")
+    print(f"Fixed Z height: {env.fixed_z}")
+    print(f"Goal range: X=[0.10, 0.25], Y=[0.05, 0.21]")
+    
+    # Run check_env
+    try:
+        check_env(env, warn=True)
+        print("✓ check_env passed!")
+    except Exception as e:
+        print(f"✗ check_env failed: {e}")
+    
+    # Test episode
+    obs, info = env.reset(seed=42)
+    print(f"\nInitial observation: {obs}")
+    print(f"Goal (X, Y): {info['goal_position']}")
+    print(f"Pipette position: {info['pipette_position']}")
+    
+    # Simple P-controller test
+    print("\nRunning P-controller test...")
+    for step in range(200):
+        if env.normalize:
+            raw_obs = env._denormalize_obs(obs)
+        else:
+            raw_obs = obs
+        
+        pos_xy = raw_obs[:2]
+        goal_xy = raw_obs[4:6]
+        error = goal_xy - pos_xy
+        action = np.clip(error * 10.0, -1.0, 1.0).astype(np.float32)
+        
+        obs, reward, terminated, truncated, info = env.step(action)
+        
+        if step % 50 == 0:
+            print(f"Step {step}: distance={info['distance_to_target']*1000:.2f}mm, reward={reward:.2f}")
+        
+        if terminated:
+            print(f"✓ Target reached at step {step}!")
+            break
+    
+    env.close()
+    print("\nDone!")

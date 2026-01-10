@@ -15,7 +15,7 @@ parser.add_argument("--gamma", type=float, default=0.99)
 parser.add_argument("--train_freq", type=int, default=1)
 parser.add_argument("--gradient_steps", type=int, default=1)
 parser.add_argument("--ent_coef", type=str, default="auto")
-parser.add_argument("--total_timesteps", type=int, default=5000000, help="Timesteps")
+parser.add_argument("--total_timesteps", type=int, default=3000000, help="Timesteps")
 parser.add_argument("--fixed_z", type=float, default=0.125, help="Fixed Z height")
 
 args = parser.parse_args()
@@ -23,7 +23,7 @@ args = parser.parse_args()
 # 2. ClearML Init
 task = Task.init(
     project_name='Mentor Group - Karna/Group 1',
-    task_name='SAC_2D_FixedZ_3M',
+    task_name='SAC_2D_FixedZ_NewReward',
 )
 
 requirements = [
@@ -53,18 +53,25 @@ run = wandb.init(
     project="RL controller",
     entity="240474-breda-university-of-applied-sciences", 
     sync_tensorboard=False, 
-    config=vars(args),
-    name=f"SAC_2D_Z{args.fixed_z}"
+    config={
+        **vars(args),
+        "goal_range_x": "[0.10, 0.25]",
+        "goal_range_y": "[0.05, 0.21]",
+        "reward": "continuous (distance + progress + success_bonus)",
+    },
+    name=f"SAC_2D_Z{args.fixed_z}_NewReward"
 )
 
 # 4. Create directory for models
 os.makedirs(f"models/{run.id}", exist_ok=True)
 
 # 5. Environment - 2D version with fixed Z
+# Goal range: X=[0.10, 0.25], Y=[0.05, 0.21]
+# Reward: continuous (no cliff at 10mm)
 env = DummyVecEnv([lambda: OT2Env2D(render_mode=None, normalize=True, fixed_z=args.fixed_z)])
 env = VecNormalize(env, norm_obs=False, norm_reward=True)
 
-# 6. Model - SAC with smaller network (2D is simpler)
+# 6. Model - SAC
 model = SAC(
     'MlpPolicy', 
     env, 
@@ -79,7 +86,7 @@ model = SAC(
     gradient_steps=args.gradient_steps,
     ent_coef=args.ent_coef,
     policy_kwargs=dict(
-        net_arch=[256, 256]  # Can try smaller like [128, 128] for 2D
+        net_arch=[256, 256]
     ),
     tensorboard_log=f"runs/{run.id}"
 )
@@ -110,4 +117,6 @@ task.upload_artifact(name="final_model_2d", artifact_object=model_path)
 task.upload_artifact(name="vec_normalize_2d", artifact_object=stats_path)
 
 print("Training Complete! Artifacts uploaded.")
+print(f"Goal range: X=[0.10, 0.25], Y=[0.05, 0.21]")
+print(f"Fixed Z: {args.fixed_z}")
 wandb.finish()
