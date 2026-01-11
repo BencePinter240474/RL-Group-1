@@ -129,12 +129,13 @@ class OT2Env2D(gym.Env):
             goal = np.array(options["goal"], dtype=np.float32)
             self.goal_position = goal[:2]  # Only take X, Y
         else:
-            # Expanded goal range (within workspace limits)
-            # Covers real plant coordinates: X=[0.19, 0.21], Y=[0.09, 0.21]
-            # Workspace max: X=0.253, Y=0.2195
+            # Expanded goal range to cover:
+            # - Starting position area (X≈0.07, Y≈0.09)
+            # - Real plant coordinates (X≈0.14-0.21, Y≈0.08-0.21)
+            # Workspace limits: X=[-0.187, 0.253], Y=[-0.1705, 0.2195]
             self.goal_position = self.np_random.uniform(
-                low=[0.10, 0.05],
-                high=[0.25, 0.21],
+                low=[0.05, 0.05],   # Include starting position area
+                high=[0.25, 0.21],  # Cover all plant coordinates
             ).astype(np.float32)
         
         # Reset simulation
@@ -275,57 +276,3 @@ class OT2Env2D(gym.Env):
     def close(self):
         if hasattr(self.sim, 'close'):
             self.sim.close()
-
-
-# Test the environment
-if __name__ == "__main__":
-    from gymnasium.utils.env_checker import check_env
-    
-    print("="*60)
-    print("Testing OT2Env2D (Fixed Z)")
-    print("="*60)
-    
-    env = OT2Env2D(render_mode=None, normalize=True, fixed_z=0.125)
-    
-    print(f"Action space: {env.action_space}")
-    print(f"Observation space: {env.observation_space}")
-    print(f"Fixed Z height: {env.fixed_z}")
-    print(f"Goal range: X=[0.10, 0.25], Y=[0.05, 0.21]")
-    
-    # Run check_env
-    try:
-        check_env(env, warn=True)
-        print("✓ check_env passed!")
-    except Exception as e:
-        print(f"✗ check_env failed: {e}")
-    
-    # Test episode
-    obs, info = env.reset(seed=42)
-    print(f"\nInitial observation: {obs}")
-    print(f"Goal (X, Y): {info['goal_position']}")
-    print(f"Pipette position: {info['pipette_position']}")
-    
-    # Simple P-controller test
-    print("\nRunning P-controller test...")
-    for step in range(200):
-        if env.normalize:
-            raw_obs = env._denormalize_obs(obs)
-        else:
-            raw_obs = obs
-        
-        pos_xy = raw_obs[:2]
-        goal_xy = raw_obs[4:6]
-        error = goal_xy - pos_xy
-        action = np.clip(error * 10.0, -1.0, 1.0).astype(np.float32)
-        
-        obs, reward, terminated, truncated, info = env.step(action)
-        
-        if step % 50 == 0:
-            print(f"Step {step}: distance={info['distance_to_target']*1000:.2f}mm, reward={reward:.2f}")
-        
-        if terminated:
-            print(f"✓ Target reached at step {step}!")
-            break
-    
-    env.close()
-    print("\nDone!")
