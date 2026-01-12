@@ -28,7 +28,7 @@ class OT2Env2D(gym.Env):
     # Workspace bounds from URDF joint limits + pipette offset
     PIPETTE_X_MIN, PIPETTE_X_MAX = -0.187, 0.253
     PIPETTE_Y_MIN, PIPETTE_Y_MAX = -0.1705, 0.2195
-    PIPETTE_Z_MIN, PIPETTE_Z_MAX = 0.1250, 0.2895
+    PIPETTE_Z_MIN, PIPETTE_Z_MAX = 0.1695, 0.2895
     
     # Velocity bounds
     MAX_VELOCITY = 1.0
@@ -124,14 +124,18 @@ class OT2Env2D(gym.Env):
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
         
-        # Generate random goal position (X, Y only)
+        # Goal position (only X, Y - Z is fixed)
         if options and "goal" in options:
             goal = np.array(options["goal"], dtype=np.float32)
             self.goal_position = goal[:2]  # Only take X, Y
         else:
+            # Expanded goal range to cover:
+            # - Starting position area (X≈0.07, Y≈0.09)
+            # - Real plant coordinates (X≈0.14-0.21, Y≈0.08-0.21)
+            # Workspace limits: X=[-0.187, 0.253], Y=[-0.1705, 0.2195]
             self.goal_position = self.np_random.uniform(
-                low=[-0.15, -0.15],
-                high=[0.15, 0.15],
+                low=[0.05, 0.05],   # Include starting position area
+                high=[0.25, 0.21],  # Cover all plant coordinates
             ).astype(np.float32)
         
         # Reset simulation
@@ -221,31 +225,23 @@ class OT2Env2D(gym.Env):
         current_distance = np.linalg.norm(pipette_pos[:2] - self.goal_position)
         
         # ==================== REWARD FUNCTION ====================
-        # 1. Progress reward
-        progress_reward = (self.prev_distance - current_distance) * 10.0
+        # Simple, continuous reward - no discontinuities
         
-        # 2. Exponential distance penalty (adjusted for 0.5mm target)
-        if current_distance < 0.01:  # Within 10mm
-            distance_penalty = -np.exp(current_distance * 200) + 1
-        else:
-            distance_penalty = -current_distance * 0.1
+        # 1. Dense reward: negative distance (closer = better)
+        distance_reward = -current_distance * 10.0
         
-        # 3. Success bonus (for 0.5mm precision)
+        # 2. Progress reward: reward for getting closer
+        progress_reward = (self.prev_distance - current_distance) * 100.0
+        
+        # 3. Success bonus
         success_bonus = 0.0
-        if current_distance < 0.0005:  # 0.5mm threshold
+        if current_distance < 0.001:  # 1mm
+            success_bonus = 50.0
+        if current_distance < 0.0005:  # 0.5mm
             success_bonus = 100.0
         
-        # 4. Precision bonus tiers
-        precision_bonus = 0.0
-        if current_distance < 0.002:  # Under 2mm
-            precision_bonus = 5.0
-        if current_distance < 0.001:  # Under 1mm
-            precision_bonus = 15.0
-        if current_distance < 0.0005:  # Under 0.5mm
-            precision_bonus = 25.0
-        
-        # Combine all reward components
-        reward = float(progress_reward + distance_penalty + success_bonus + precision_bonus)
+        # Combine rewards
+        reward = float(distance_reward + progress_reward + success_bonus)
         # =========================================================
         
         # Update previous distance
@@ -264,10 +260,9 @@ class OT2Env2D(gym.Env):
             "goal_position": self.goal_position.copy(),
             "fixed_z": self.fixed_z,
             "reward_components": {
+                "distance": distance_reward,
                 "progress": progress_reward,
-                "distance_penalty": distance_penalty,
                 "success_bonus": success_bonus,
-                "precision_bonus": precision_bonus,
             }
         }
         
