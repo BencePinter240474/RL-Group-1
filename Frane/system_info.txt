@@ -1,0 +1,8 @@
+- OS: Linux-5.15.0-160-generic-x86_64-with-glibc2.35 # 170-Ubuntu SMP Wed Oct 1 10:06:56 UTC 2025
+- Python: 3.10.12
+- Stable-Baselines3: 2.1.0
+- PyTorch: 2.1.0+cu121
+- GPU Enabled: True
+- Numpy: 1.24.3
+- Cloudpickle: 3.0.0
+- Gymnasium: 0.29.1
