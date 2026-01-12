@@ -2,7 +2,7 @@ from clearml import Task
 import os
 import argparse
 
-os.environ["WANDB_API_KEY"] = "wandb_v1_UdoA0OG83DKmdOf4HijvtMTr72V"
+os.environ["WANDB_API_KEY"] = "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"
 
 # 1. Setup Arguments First
 parser = argparse.ArgumentParser()
