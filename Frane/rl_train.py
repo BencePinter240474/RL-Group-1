@@ -2,19 +2,19 @@ from clearml import Task
 import os
 import argparse
 
-os.environ["WANDB_API_KEY"] = "00dfdda8605c784f772ee2a8f94cc00d861e8bf7"
+os.environ["WANDB_API_KEY"] = "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"
 
 # 1. Setup Arguments First
 parser = argparse.ArgumentParser()
-parser.add_argument("--learning_rate", type=float, default=0.0003)
-parser.add_argument("--buffer_size", type=int, default=1500000)
+parser.add_argument("--learning_rate", type=float, default=0.001)
+parser.add_argument("--buffer_size", type=int, default=500000)
 parser.add_argument("--learning_starts", type=int, default=10000)
-parser.add_argument("--batch_size", type=int, default=1024)
+parser.add_argument("--batch_size", type=int, default=2048)
 parser.add_argument("--tau", type=float, default=0.005)
 parser.add_argument("--gamma", type=float, default=0.99)
-parser.add_argument("--train_freq", type=int, default=1)
-parser.add_argument("--gradient_steps", type=int, default=1)
-parser.add_argument("--ent_coef", type=str, default="auto")
+parser.add_argument("--train_freq", type=int, default=4)
+parser.add_argument("--gradient_steps", type=int, default=4)
+parser.add_argument("--ent_coef", type=str, default=0.2)
 parser.add_argument("--total_timesteps", type=int, default=3000000, help="Timesteps")
 parser.add_argument("--fixed_z", type=float, default=0.125, help="Fixed Z height")
 
@@ -43,7 +43,7 @@ task.execute_remotely(queue_name="default")
 
 # NOW import the packages after ClearML setup
 from stable_baselines3 import SAC
-from ot2_env_wrapper import OT2EnvSparse2D
+from ot2_env_wrapper import OT2Env2D
 from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
 import wandb
 from wandb.integration.sb3 import WandbCallback
@@ -68,7 +68,7 @@ os.makedirs(f"models/{run.id}", exist_ok=True)
 # 5. Environment - 2D version with fixed Z
 # Goal range: X=[0.10, 0.25], Y=[0.05, 0.21]
 # Reward: continuous (no cliff at 10mm)
-env = DummyVecEnv([lambda: OT2EnvSparse2D(render_mode=None, normalize=True, fixed_z=args.fixed_z)])
+env = DummyVecEnv([lambda: OT2Env2D(render_mode=None, normalize=True, fixed_z=args.fixed_z)])
 env = VecNormalize(env, norm_obs=False, norm_reward=True)
 
 # 6. Model - SAC
