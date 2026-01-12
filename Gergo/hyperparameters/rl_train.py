@@ -43,7 +43,7 @@ task.execute_remotely(queue_name="default")
 
 # NOW import the packages after ClearML setup
 from stable_baselines3 import SAC
-from ot2_env_wrapper import OT2Env2D
+from ot2_wrapper import OT2Env2D
 from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
 import wandb
 from wandb.integration.sb3 import WandbCallback
