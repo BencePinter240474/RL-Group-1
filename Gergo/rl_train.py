@@ -43,7 +43,7 @@ task.execute_remotely(queue_name="default")
 
 # NOW import the packages after ClearML setup
 from stable_baselines3 import SAC
-from ot2_env_wrapper import OT2Env2D
+from ot2_env_wrapper import OT2EnvSparse2D
 from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
 import wandb
 from wandb.integration.sb3 import WandbCallback
@@ -68,7 +68,7 @@ os.makedirs(f"models/{run.id}", exist_ok=True)
 # 5. Environment - 2D version with fixed Z
 # Goal range: X=[0.10, 0.25], Y=[0.05, 0.21]
 # Reward: continuous (no cliff at 10mm)
-env = DummyVecEnv([lambda: OT2Env2D(render_mode=None, normalize=True, fixed_z=args.fixed_z)])
+env = DummyVecEnv([lambda: OT2EnvSparse2D(render_mode=None, normalize=True, fixed_z=args.fixed_z)])
 env = VecNormalize(env, norm_obs=False, norm_reward=True)
 
 # 6. Model - SAC
